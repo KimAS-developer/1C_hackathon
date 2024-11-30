@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.safetech.data.database.DatabaseSource
 import com.example.safetech.data.network.Network
 import com.example.safetech.data.network.models.Employee
 import com.example.safetech.data.network.models.ViolationsOnObject
@@ -27,6 +28,8 @@ import com.example.safetech.data.repositories.AuthRepositoryImpl
 import com.example.safetech.data.repositories.ChecklistsRepository
 import com.example.safetech.data.repositories.ChecklistsRepositoryImpl
 import com.example.safetech.data.repositories.ChecklistsRepositoryTest
+import com.example.safetech.data.repositories.DatabaseRepository
+import com.example.safetech.data.repositories.DatabaseRepositoryImpl
 import com.example.safetech.view.theme.models.UiControlItem
 import com.example.safetech.view.theme.models.UiObjectChecklist
 import com.example.safetech.view.theme.style.SafeTechTheme
@@ -52,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     MainScreen(
                         authRepository,
                         checklistsRepository,
-//                        databaseRepository,
+                        databaseRepository,
                         this
                     )
                 }
@@ -85,8 +88,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-//    private val database: DatabaseSource by lazy { DatabaseSource(applicationContext) }
-//    private val databaseRepository: DatabaseRepository by lazy { DatabaseRepositoryImpl(database.dao) }
+    private val database: DatabaseSource by lazy { DatabaseSource(applicationContext) }
+    private val databaseRepository: DatabaseRepository by lazy { DatabaseRepositoryImpl(
+        database.uiObjectChecklistDao,
+        database.uiControlItemDao,
+        database.violationsOnObjectDao,
+        database.employeeDao
+    ) }
 
     companion object {
         val network: Network = Network()
@@ -99,7 +107,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     authRepository: AuthRepository,
     checklistsRepository: ChecklistsRepository,
-    //databaseRepository: DatabaseRepository,
+    databaseRepository: DatabaseRepository,
     activity: MainActivity
 ) {
     val navController = rememberNavController()
@@ -111,22 +119,31 @@ fun MainScreen(
     var chosenControlItem = UiControlItem("", "", "", "", "", false, "", Uri.EMPTY, "")
 
     NavHost(navController = navController, startDestination = "auth") {
-        composable("auth") { AuthScreen(AuthViewModel(navController, authRepository)) }
+        composable("auth") { AuthScreen(AuthViewModel(navController, authRepository, activity)) }
         composable("checklists") {
             ChecklistsListScreen(
                 ChecklistsListViewModel(
                     navController,
                     checklistsRepository,
-//                    databaseRepository
+                    activity,
+                    databaseRepository
                 )
             ) {
                 chosenChecklist = it
             }
         }
-        composable("checklist") { CheckListScreen(ChecklistViewModel(navController, checklistsRepository), chosenChecklist, activity) {
-            chosenControlItem = it
-            navController.navigate("controlInfo")
-        } }
+        composable("checklist") {
+            CheckListScreen(
+                ChecklistViewModel(
+                    navController,
+                    checklistsRepository,
+                    databaseRepository
+                ), chosenChecklist, activity
+            ) {
+                chosenControlItem = it
+                navController.navigate("controlInfo")
+            }
+        }
         composable("controlInfo") {
             ControlIndicatorInfoScreen(
                 chosenControlItem,

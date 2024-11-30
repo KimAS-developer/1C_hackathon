@@ -1,5 +1,7 @@
 package com.example.safetech.view.theme.ui
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -26,8 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import com.example.safetech.MainActivity
 import com.example.safetech.R
 import com.example.safetech.data.network.services.AuthData
+import com.example.safetech.data.network.services.AuthResponse
 import com.example.safetech.data.repositories.AuthRepository
 import com.example.safetech.view.theme.ui.custom_composable.SafeTechButton
 import com.example.safetech.view.theme.ui.custom_composable.SafeTechButtonStyle
@@ -98,7 +102,8 @@ fun AuthScreen(
 
 class AuthViewModel(
     private val navHostController: NavHostController,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val activity: MainActivity
 ): ViewModel() {
 
     private object State {
@@ -107,13 +112,25 @@ class AuthViewModel(
     }
 
     fun auth(email: String, password: String) {
-        //Log.v("TamziF", "email $email, password $password")
         viewModelScope.launch {
             val response = authRepository.auth(AuthData(email, password))
             if (response.isSuccessful) {
+                saveToSharedPref(response.body()!!, email, activity.applicationContext)
                 navHostController.navigate("checklists")
             }
         }
+    }
+
+    private fun saveToSharedPref(authResponse: AuthResponse, email: String, context: Context) {
+        val sharedPreferences: SharedPreferences = context.getSharedPreferences(
+            context.getString(R.string.SharedPrefs),
+            Context.MODE_PRIVATE
+        )
+        val editor = sharedPreferences.edit()
+        editor.putString(context.getString(R.string.SharedPrefs_Token), authResponse.token)
+        editor.putString(context.getString(R.string.SharedPrefs_Username), authResponse.username)
+        editor.putString(context.getString(R.string.SharedPrefs_Email), email)
+        editor.apply()
     }
 
     fun refreshPassword(password: String) {

@@ -1,10 +1,7 @@
 package com.example.safetech.view.theme.ui
 
 import android.net.Uri
-import androidx.collection.emptyLongSet
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -13,15 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,7 +34,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.example.safetech.MainActivity
 import com.example.safetech.MockData
 import com.example.safetech.R
 import com.example.safetech.data.network.models.Employee
@@ -185,14 +175,6 @@ fun ControlIndicatorInfoScreen(
                                     .fillMaxWidth()
                                     .padding(top = 20.dp)
                             )
-
-//                    ExposedDropdownMenuBox(expanded = isMenuExpanded, onExpandedChange = {}) {
-//                        LazyColumn {
-//                            items(employees) {employee ->
-//                                Text(employee.fullName)
-//                            }
-//                        }
-//                    }
 
                         Text(
                             color = Color.White,

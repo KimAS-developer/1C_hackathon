@@ -37,6 +37,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import com.example.safetech.R
+import com.example.safetech.data.database.models.UiObjectChecklistDb
+import com.example.safetech.data.repositories.DatabaseRepository
 
 
 @Composable
@@ -55,9 +58,6 @@ fun CheckListScreen(
             modifier = Modifier.weight(1f)
         ) {
             items(viewModel.getControlGroupList(uiObjectChecklist.checklist)) { items ->
-//                ControlItemScreen(item, ControlItemScreenViewModel(activity.uriFlow) {
-//                    activity.getPhotoFromGallery()
-//                })
                 ControlGroupItemScreen(
                     controlGroupName = items[0].controlGroup,
                     items = items,
@@ -86,7 +86,8 @@ fun CheckListScreen(
 
 class ChecklistViewModel(
     private val navHostController: NavHostController,
-    private val checklistsRepository: ChecklistsRepository
+    private val checklistsRepository: ChecklistsRepository,
+    private val databaseRepository: DatabaseRepository
 ): ViewModel() {
 
     private var controlGroupsList: List<List<UiControlItem>>? = null
@@ -114,18 +115,41 @@ class ChecklistViewModel(
             uiObjectChecklist.isChecked = true
             checklistsRepository.sendViolationList(buildViolationsList(uiObjectChecklist, context))
             launch(Dispatchers.Main) {
+                saveToDb(uiObjectChecklist)
                 Toast.makeText(context, "Данные успешно отправлены", Toast.LENGTH_SHORT).show()
                 navHostController.navigate("checklists")
             }
         }
     }
 
+    private suspend fun saveToDb(item: UiObjectChecklist) {
+        val uiObjectChecklistDb = UiObjectChecklistDb(
+            number = item.number,
+            structuralUnit = item.structuralUnit,
+            responsibleForObject = item.responsibleForObject,
+            isChecked = item.isChecked
+        )
+        databaseRepository.insertUiObjectChecklistDb(uiObjectChecklistDb)
+    }
+
     private fun buildViolationsList(uiObjectChecklist: UiObjectChecklist, context: Context): ViolationsOnObject {
         return ViolationsOnObject(
             number = uiObjectChecklist.number,
-            inspector = "Коротков Богдан Маркович",
+            inspector = getInspectorUsernameFromSharedPrefs(context),
             violationChecklist = getViolationsFromChecklist(uiObjectChecklist.checklist, context)
         )
+    }
+
+    private fun getInspectorUsernameFromSharedPrefs(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences(
+            context.getString(R.string.SharedPrefs),
+            Context.MODE_PRIVATE
+        )
+
+        return sharedPreferences.getString(
+            context.getString(R.string.SharedPrefs_Username),
+            ""
+        )!!
     }
 
     private fun getViolationsFromChecklist(checklist: List<UiControlItem>, context: Context): List<ViolationItem> {

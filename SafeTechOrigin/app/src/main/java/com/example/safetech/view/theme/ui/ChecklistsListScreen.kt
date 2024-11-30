@@ -1,16 +1,26 @@
 package com.example.safetech.view.theme.ui
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import com.example.safetech.MainActivity
+import com.example.safetech.R
+import com.example.safetech.data.database.models.UiObjectChecklistDb
+import com.example.safetech.data.database.models.ViolationsOnObjectDb
+import com.example.safetech.data.network.models.Employee
 import com.example.safetech.data.network.models.ObjectChecklist
+import com.example.safetech.data.network.models.ViolationItem
+import com.example.safetech.data.network.models.ViolationsOnObject
 import com.example.safetech.data.repositories.ChecklistsRepository
+import com.example.safetech.data.repositories.DatabaseRepository
 import com.example.safetech.view.theme.models.UiControlItem
 import com.example.safetech.view.theme.models.UiObjectChecklist
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +48,8 @@ fun ChecklistsListScreen(
 class ChecklistsListViewModel(
     private val navHostController: NavHostController,
     private val checklistsRepository: ChecklistsRepository,
-    //private val databaseRepository: DatabaseRepository
+    private val activity: MainActivity,
+    private val databaseRepository: DatabaseRepository
 ): ViewModel() {
 
     private val _checkListItems = MutableStateFlow<List<UiObjectChecklist>>(emptyList())
@@ -56,11 +67,79 @@ class ChecklistsListViewModel(
     private fun getChecklistsList() {
         viewModelScope.launch {
             Log.v("TamziF", "getChecklistsList()")
-            val response: List<UiObjectChecklist> = checklistsRepository.getChecklistsList()
+            val email = getInspectorEmail()
+            var response: List<UiObjectChecklist> = checklistsRepository.getChecklistsList(email)
+            if (response.isEmpty()) {
+                response = loadFromDb()
+            }
             _checkListItems.value = response
             checklistsList = response
-            //databaseRepository.insert()
         }
+    }
+
+    private suspend fun loadFromDb(): List<UiObjectChecklist> {
+        val list: MutableList<UiObjectChecklist> = mutableListOf()
+
+        val uiObjects = databaseRepository.getAllUiObjectChecklistDb()
+        for (uiObject in uiObjects) {
+            val controlItemsDb = databaseRepository.getItemsForChecklist(uiObject.number)
+            val violationItemsDb = databaseRepository.getViolationOnObjectItemsForChecklist(uiObject.number)
+            val employees = databaseRepository.getEmployeesByChecklistNumber(uiObject.number)
+
+
+            list.add(
+                UiObjectChecklist(
+                    number = uiObject.number,
+                    structuralUnit = uiObject.structuralUnit,
+                    responsibleForObject = uiObject.responsibleForObject,
+                    checklist = controlItemsDb.map { UiControlItem(
+                        code = it.code,
+                        controlIndicator = it.controlIndicator,
+                        controlGroup = it.controlGroup,
+                        description = it.description,
+                        violationDescription = it.violationDescription,
+                        isViolation = it.isViolation,
+                        violationIndicator = it.violationIndicator,
+                        photoUri = it.photoUri.toUri(),
+                        responsibleForViolation = it.responsibleForViolation
+                    ) },
+                    employees = employees.map {
+                        Employee(
+                            fullName = it.fullName,
+                            code = it.code
+                        )
+                    },
+                    violationsList = violationItemsDb.map {
+                        ViolationsOnObject(
+                            number = it.number,
+                            inspector = it.inspector,
+                            violationChecklist = databaseRepository.getViolationItemsForChecklist(it.number).map {
+                                ViolationItem(
+                                    controlIndicator = it.controlIndicator,
+                                    violationDescription = it.violationDescription,
+                                    responsibleForTheViolation = it.responsibleForTheViolation,
+                                    photo = it.photo
+                                )
+                            }
+                        )
+                    }.toMutableList(),
+                )
+            )
+        }
+
+        return list
+    }
+
+    private fun getInspectorEmail(): String {
+        val sharedPreferences = activity.applicationContext.getSharedPreferences(
+            activity.applicationContext.getString(R.string.SharedPrefs),
+            Context.MODE_PRIVATE
+        )
+
+        return sharedPreferences.getString(
+            activity.applicationContext.getString(R.string.SharedPrefs_Email),
+            ""
+        )!!
     }
 
     fun openChecklist() {

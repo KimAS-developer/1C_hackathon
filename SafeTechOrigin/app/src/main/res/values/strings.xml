@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">SafeTech</string>
+    <string name="SharedPrefs">SafeTech SharedPrefs</string>
+    <string name="SharedPrefs_Token">SharedPrefs token</string>
+    <string name="SharedPrefs_Username">SharedPrefs username</string>
+    <string name="SharedPrefs_Email">SharedPrefs email</string>
 </resources>

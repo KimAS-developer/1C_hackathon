@@ -2,11 +2,25 @@ package com.example.safetech.data.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
-import com.example.safetech.view.theme.models.UiObjectChecklist
+import com.example.safetech.data.database.models.EmployeeDb
+import com.example.safetech.data.database.models.UiControlItemDb
+import com.example.safetech.data.database.models.UiObjectChecklistDb
+import com.example.safetech.data.database.models.ViolationItemDb
+import com.example.safetech.data.database.models.ViolationsOnObjectDb
 
-//@Database(entities = [UiObjectChecklist::class], version = 1)
-//@TypeConverters(Converters::class)
-//abstract class AppDatabase : RoomDatabase() {
-//    abstract fun uiObjectChecklistDao(): UiObjectChecklistDao
-//}
+@Database(
+    entities = [
+        EmployeeDb::class,
+        UiControlItemDb::class,
+        UiObjectChecklistDb::class,
+        ViolationsOnObjectDb::class,
+        ViolationItemDb::class
+    ],
+    version = 1
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun uiObjectChecklistDao(): UiObjectChecklistDao
+    abstract fun uiControlItemDao(): UiControlItemDao
+    abstract fun violationsOnObjectDao(): ViolationsOnObjectDao
+    abstract fun employeeDao(): EmployeeDao
+}
